@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class APIController @Inject()(cc : ControllerComponents, apiService: APIService) extends AbstractController(cc) {
 
   def syncContacts() = Action.async{ implicit request: Request[AnyContent] =>
-    apiService.syncContacts map {
+    apiService.syncContacts() map {
       case Right(contacts) => Ok(Json.toJson(contacts))
       case Left(exception) => BadRequest("Something went wrong")
     }
