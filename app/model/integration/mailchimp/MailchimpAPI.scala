@@ -13,8 +13,8 @@ object MailchimpAPI {
   def createListEndpoint() = s"${getMailChimpHost()}/lists/"
   def getMembersEndpoint(idList: String) = s"${getMailChimpHost()}/lists/${idList}/members/"
   def createMemberEndpoint(idList: String, skipMemberValidation: Boolean = true) = {
-    val skipMemberValidationParam = if(skipMemberValidation) "" else "?skip_merge_validation=true"
-    s"${getMailChimpHost()}/lists/${idList}/members/${skipMemberValidationParam}"
+    val skipMemberValidationParam = if(skipMemberValidation) "?skip_merge_validation=true" else ""
+    s"${getMailChimpHost()}/lists/${idList}/members${skipMemberValidationParam}"
   }
 
 }

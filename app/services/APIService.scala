@@ -5,7 +5,7 @@ import akka.pattern.ask
 import impl.integration.contact.ContactAPISync
 import impl.integration.contact.ContactAPISync.GetContacts
 import impl.integration.mailchimp.MailchimpAPISync
-import impl.integration.mailchimp.MailchimpAPISync.{CreateList, DeleteList, GetIdExistingList}
+import impl.integration.mailchimp.MailchimpAPISync.{AddMembers, CreateList, DeleteList, GetIdExistingList}
 
 import javax.inject.Singleton
 import model.integration.contact.Contact
@@ -30,16 +30,24 @@ class APIService {
   val contactsSyncActor = system.actorOf(ContactsSync.props, "ContactsSyncActor")
   val mailchimpSyncActor = system.actorOf(MailchimpSync.props, "MailchimpSyncActor")
 
-  def syncContacts():Future[Either[Exception, List[Contact]]] = {
+  def syncContacts():Future[Option[List[Contact]]] = {
     for {
       idList <- (mailchimpSyncActor ? GetIdExistingList()).mapTo[Either[Exception, Option[String]]].map(extractResult)
       deleteResponse <- (mailchimpSyncActor ? DeleteList(idList)).mapTo[Either[Exception, Option[Boolean]]].map(extractResult)
       continue = deleteResponse.getOrElse(false)
       if(continue)
       idNewList <- (mailchimpSyncActor ? CreateList()).mapTo[Either[Exception, Option[String]]].map(extractResult)
-      contacts <- (contactsSyncActor ? GetContacts()).mapTo[Either[Exception, List[Contact]]]
+      contacts <- (contactsSyncActor ? GetContacts()).mapTo[Either[Exception, Option[List[Contact]]]].map(extractContacts)
+      result <- (mailchimpSyncActor ? AddMembers(idNewList, contacts)).mapTo[Either[Exception,Option[List[Contact]]]].map(extractResult)
     }yield {
-      contacts
+      result
+    }
+  }
+
+  def extractContacts[T](result: Either[Exception, Option[List[T]]]): Option[List[T]] = {
+    result match{
+      case Right(contacts) => contacts
+      case Left(exception) => None
     }
   }
 

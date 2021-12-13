@@ -31,7 +31,7 @@ class ContactAPISync() extends ProjectActor{
     case GetContacts() => getContacts pipeTo sender()
   }
 
-  def getContacts: Future[Either[Exception, List[Contact]]] = {
+  def getContacts: Future[Either[Exception, Option[List[Contact]]]] = {
 
     def generateUri: String = ContactAPI.contactsGetListOfContactsEndpoint()
 
@@ -41,14 +41,15 @@ class ContactAPISync() extends ProjectActor{
       entityFuture.map(_.data.utf8String)
     }
 
-    def extractContactsFromJson(json: JValue): Either[Exception, List[Contact]] = {
+    def extractContactsFromJson(json: JValue): Either[Exception, Option[List[Contact]]] = {
       json.extractOpt[List[Contact]] match {
-        case Some(contacts) => Right(contacts)
+        case Some(contacts) =>
+          if(contacts.isEmpty) Right(None) else Right(Some(contacts))
         case None => Left(new Exception("Error while extracting JSON response"))
       }
     }
 
-    def parseJsonContacts(response: String) : Either[Exception, List[Contact]] = {
+    def parseJsonContacts(response: String) : Either[Exception, Option[List[Contact]]] = {
       parseOpt(response) match {
         case Some(json) => extractContactsFromJson(json)
         case None =>  Left(new Exception("Error while parsing JSON response"))

@@ -1,8 +1,25 @@
 package model.integration.mailchimp
 
+import model.integration.contact.Contact
+
 import java.time.LocalDateTime
 
 object ListMailchimpProjection {
+  def createListMembersJson(contact: Contact) = {
+    s"""
+     {
+        "email_address": "${contact.email}",
+        "status": "subscribed",
+        "merge_fields": {
+            "FNAME": "${contact.firstName}",
+            "LNAME": "${contact.lastName}",
+            "ADDRESS": "Trujillo",
+            "PHONE": ""
+        }
+    }
+    """
+  }
+
 
   def createDefaultListMailchimpJson() = {
     s"""

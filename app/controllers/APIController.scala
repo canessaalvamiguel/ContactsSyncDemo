@@ -12,8 +12,12 @@ class APIController @Inject()(cc : ControllerComponents, apiService: APIService)
 
   def syncContacts() = Action.async{ implicit request: Request[AnyContent] =>
     apiService.syncContacts() map {
-      case Right(contacts) => Ok(Json.toJson(contacts))
-      case Left(exception) => BadRequest("Something went wrong")
+      case Some(contacts) => Ok(
+        Json.obj("syncedContacts" -> contacts.length, "contacts" -> contacts)
+      )
+      case None => BadRequest(
+        Json.obj("error" -> "Something went wrong")
+      )
     }
   }
 }
