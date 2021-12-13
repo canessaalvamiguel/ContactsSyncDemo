@@ -9,7 +9,7 @@ object MailchimpAPI {
   def getMailChimpHost() = s"${MAILCHIMP_HOST}/${API_VERSION}"
 
   def getListEndpoint() = s"${getMailChimpHost()}/lists/"
-  def deleteListEndpoint() = s"${getMailChimpHost()}/lists/"
+  def deleteListEndpoint(idList: String) = s"${getMailChimpHost()}/lists/${idList}"
   def createListEndpoint() = s"${getMailChimpHost()}/lists/"
   def getMembersEndpoint(idList: String) = s"${getMailChimpHost()}/lists/${idList}/members/"
   def createMemberEndpoint(idList: String, skipMemberValidation: Boolean = true) = {
