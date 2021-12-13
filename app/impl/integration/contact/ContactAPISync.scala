@@ -35,15 +35,24 @@ class ContactAPISync() extends ProjectActor{
 
     def generateUri: String = ContactAPI.contactsGetListOfContactsEndpoint()
 
-    def executeRequest(request: HttpRequest)  = {
+    def executeRequest(request: HttpRequest): Future[String]  = {
       val responseFuture: Future[HttpResponse] = Http().singleRequest(request)
       val entityFuture: Future[HttpEntity.Strict] = responseFuture.flatMap(_.entity.toStrict(5.seconds))
       entityFuture.map(_.data.utf8String)
     }
 
+    def extractContactsFromJson(json: JValue): Either[Exception, List[Contact]] = {
+      json.extractOpt[List[Contact]] match {
+        case Some(contacts) => Right(contacts)
+        case None => Left(new Exception("Error while extracting JSON response"))
+      }
+    }
+
     def parseJsonContacts(response: String) : Either[Exception, List[Contact]] = {
-      val contacts = parse(response).extract[List[Contact]]
-      Right(contacts)
+      parseOpt(response) match {
+        case Some(json) => extractContactsFromJson(json)
+        case None =>  Left(new Exception("Error while parsing JSON response"))
+      }
     }
 
     val request = HttpRequest(
