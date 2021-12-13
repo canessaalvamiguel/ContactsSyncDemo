@@ -5,7 +5,7 @@ import akka.pattern.ask
 import impl.integration.contact.ContactAPISync
 import impl.integration.contact.ContactAPISync.GetContacts
 import impl.integration.mailchimp.MailchimpAPISync
-import impl.integration.mailchimp.MailchimpAPISync.{DeleteList, GetIdExistingList}
+import impl.integration.mailchimp.MailchimpAPISync.{CreateList, DeleteList, GetIdExistingList}
 
 import javax.inject.Singleton
 import model.integration.contact.Contact
@@ -36,6 +36,7 @@ class APIService {
       deleteResponse <- (mailchimpSyncActor ? DeleteList(idList)).mapTo[Either[Exception, Option[Boolean]]].map(extractResult)
       continue = deleteResponse.getOrElse(false)
       if(continue)
+      idNewList <- (mailchimpSyncActor ? CreateList()).mapTo[Either[Exception, Option[String]]].map(extractResult)
       contacts <- (contactsSyncActor ? GetContacts()).mapTo[Either[Exception, List[Contact]]]
     }yield {
       contacts

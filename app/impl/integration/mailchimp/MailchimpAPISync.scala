@@ -4,12 +4,12 @@ import actors.ProjectActor
 import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.headers.{Authorization, BasicHttpCredentials}
-import akka.http.scaladsl.model.{HttpEntity, HttpMethods, HttpRequest, HttpResponse, StatusCode}
+import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpMethods, HttpRequest, HttpResponse, StatusCode}
 import akka.stream.ActorMaterializer
 import net.liftweb.json.{DefaultFormats, JValue, parseOpt}
 import akka.pattern.pipe
-import impl.integration.mailchimp.MailchimpAPISync.{DeleteList, GetIdExistingList}
-import model.integration.mailchimp.{ListResponseMailchimp, MailchimpAPI}
+import impl.integration.mailchimp.MailchimpAPISync.{CreateList, DeleteList, GetIdExistingList}
+import model.integration.mailchimp.{ListMailchimp, ListMailchimpProjection, ListResponseMailchimp, MailchimpAPI}
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
@@ -33,6 +33,43 @@ class MailchimpAPISync() extends ProjectActor{
   override def handleMessage: Receive = {
     case GetIdExistingList() => getIdExistingList pipeTo sender()
     case DeleteList(id) => deleteExistingList(id) pipeTo sender()
+    case CreateList() => createList pipeTo sender()
+  }
+
+  def createList: Future[Either[Exception, Option[String]]] = {
+    def generateUri(): String = MailchimpAPI.createListEndpoint()
+
+    def executeRequest(request: HttpRequest): Future[String]  = {
+      val responseFuture: Future[HttpResponse] = Http().singleRequest(request)
+      val entityFuture: Future[HttpEntity.Strict] = responseFuture.flatMap(_.entity.toStrict(5.seconds))
+      entityFuture.map(_.data.utf8String)
+    }
+
+    def extractIdFromJson(json: JValue): Either[Exception, Option[String]] = {
+      json.extractOpt[ListMailchimp] match {
+        case Some(listmailchimp) =>
+          Right(Some(listmailchimp.id))
+        case None => Left(new Exception("Error while extracting JSON response"))
+      }
+    }
+
+    def getListIdFromJson(response: String)  : Either[Exception, Option[String]] = {
+      println(response)
+      parseOpt(response) match {
+        case Some(json) => extractIdFromJson(json)
+        case None => Left(new Exception("Error while parsing JSON response"))
+      }
+    }
+
+    val authorization = Authorization(BasicHttpCredentials("Mailchimp", MailchimpAPI.auth_token))
+    val body = ListMailchimpProjection.createDefaultListMailchimpJson()
+    val request = HttpRequest(
+      method = HttpMethods.POST,
+      uri = generateUri(),
+      headers = List(authorization),
+      entity = HttpEntity(ContentTypes.`application/json`, body)
+    )
+    executeRequest(request).map(x => getListIdFromJson(x))
   }
 
   def deleteExistingList(idList : Option[String]): Future[Either[Exception, Option[Boolean]]] = {
