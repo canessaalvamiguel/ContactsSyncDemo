@@ -1,9 +1,10 @@
 name := "ContactsSyncDemo"
  
-version := "1.0" 
+version := "1.0"
+
+herokuAppName in Compile:= "salty-crag-11117"
       
 lazy val `contactssyncdemo` = (project in file(".")).enablePlugins(PlayScala)
-
       
 resolvers += "Akka Snapshot Repository" at "https://repo.akka.io/snapshots/"
       
